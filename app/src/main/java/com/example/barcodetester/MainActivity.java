@@ -2,104 +2,59 @@ package com.example.barcodetester;
 
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
-import android.view.KeyEvent;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
-
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
-
-    private static final String TAG = "BarcodeScannerApp";
-    private StringBuilder barcodeBuffer = new StringBuilder();
-    private EditText barcodeEditText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_main);
 
+        // Find the EditText view
+        EditText editText = findViewById(R.id.barcodeEditText);
 
-        // Initialize the EditText to display scanned barcode
-        barcodeEditText = findViewById(R.id.barcodeEditText);
+        // Handler for managing delayed tasks
+        Handler handler = new Handler();
 
-        barcodeEditText.addTextChangedListener(
-                new TextWatcher() {
-                    @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+        // Use an array to hold the Runnable reference (mutable container)
+        final Runnable[] runnableHolder = new Runnable[1];
 
-                    }
-                    @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+        // Add a TextWatcher to handle text changes
+        editText.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                // No action needed before text changes
+            }
 
-                    private Timer timer = new Timer();
-                    private final long DELAY = 5000; // Milliseconds
-
-                    @Override
-                    public void afterTextChanged(final Editable s) {
-                        timer.cancel();
-                        timer = new Timer();
-                        timer.schedule(
-                                new TimerTask() {
-                                    @Override
-                                    public void run() {
-                                        // TODO: Do what you need here (refresh list).
-                                        new Handler(Looper.getMainLooper()).post(() -> {
-                                            Toast.makeText(getApplicationContext(), barcodeEditText.getText().toString(), Toast.LENGTH_SHORT).show();
-                                        });
-
-                                        // You will probably need to use
-                                        // runOnUiThread(Runnable action) for some
-                                        // specific actions (e.g., manipulating views).
-                                    }
-                                },
-                                DELAY
-                        );
-                    }
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                // Remove any pending runnable if one exists
+                if (runnableHolder[0] != null) {
+                    handler.removeCallbacks(runnableHolder[0]);
                 }
-        );
 
-    }
-
-    @Override
-    public boolean dispatchKeyEvent(KeyEvent event) {
-        if (event.getAction() == KeyEvent.ACTION_DOWN) {
-            char inputChar = (char) event.getUnicodeChar();
-
-            // Filter out non-printable characters like null (0)
-            if (inputChar != '\u0000' && event.getKeyCode() != KeyEvent.KEYCODE_ENTER) {
-                // Append valid characters
-                barcodeBuffer.append(inputChar);
+                // Schedule a new runnable to execute after 5 seconds
+                runnableHolder[0] = new Runnable() {
+                    @Override
+                    public void run() {
+                        String fullText = editText.getText().toString();
+                        // Display the text in a Toast message
+                        Toast.makeText(MainActivity.this, fullText, Toast.LENGTH_SHORT).show();
+                    }
+                };
+                handler.postDelayed(runnableHolder[0], 5000); // 5-second delay
             }
 
-            // If Enter key is pressed, treat it as end of barcode input
-            if (event.getKeyCode() == KeyEvent.KEYCODE_ENTER) {
-                // Get the barcode string
-                String barcode = barcodeBuffer.toString().trim();
-                barcodeBuffer.setLength(0); // Clear buffer for next input
-                handleBarcodeScanned(barcode);
-                return true; // Consume Enter key to prevent additional action
+            @Override
+            public void afterTextChanged(Editable s) {
+                // No action needed after text changes
             }
-        }
-
-        return super.dispatchKeyEvent(event); // Allow other key events to propagate
+        });
     }
-
-    // Handle the scanned barcode (e.g., display it or send it for processing)
-    private void handleBarcodeScanned(String barcode) {
-        Log.d(TAG, "Scanned Barcode: " + barcode);
-        barcodeEditText.setText(barcode);  // Display the barcode in EditText
-    }
-
-
 }
