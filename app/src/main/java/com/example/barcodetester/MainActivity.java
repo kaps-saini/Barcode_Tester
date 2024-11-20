@@ -1,15 +1,23 @@
 package com.example.barcodetester;
 
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -26,6 +34,41 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize the EditText to display scanned barcode
         barcodeEditText = findViewById(R.id.barcodeEditText);
+
+        barcodeEditText.addTextChangedListener(
+                new TextWatcher() {
+                    @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+                    }
+                    @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) { }
+
+                    private Timer timer = new Timer();
+                    private final long DELAY = 5000; // Milliseconds
+
+                    @Override
+                    public void afterTextChanged(final Editable s) {
+                        timer.cancel();
+                        timer = new Timer();
+                        timer.schedule(
+                                new TimerTask() {
+                                    @Override
+                                    public void run() {
+                                        // TODO: Do what you need here (refresh list).
+                                        new Handler(Looper.getMainLooper()).post(() -> {
+                                            Toast.makeText(getApplicationContext(), barcodeEditText.getText().toString(), Toast.LENGTH_SHORT).show();
+                                        });
+
+                                        // You will probably need to use
+                                        // runOnUiThread(Runnable action) for some
+                                        // specific actions (e.g., manipulating views).
+                                    }
+                                },
+                                DELAY
+                        );
+                    }
+                }
+        );
+
     }
 
     @Override
